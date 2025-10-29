@@ -11,9 +11,25 @@ export default function ValidationPage() {
   const [idea, setIdea] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
+  const [pdfText, setPdfText] = useState("")
+  const [summary, setSummary] = useState<any>(null)
 
-  const handleValidate = () => {
+  const handleValidate = async () => {
     setIsValidating(true)
+    try {
+      const response = await fetch("/api/ai-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: idea + pdfText }),
+      })
+
+      const data = await response.json()
+      setSummary(data)
+      console.log("Summary:", data)
+    } catch (err) {
+      console.error("Validation request failed:", err)
+    }
+
     setTimeout(() => {
       setValidationResult({
         overallScore: 78,
