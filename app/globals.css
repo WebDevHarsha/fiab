@@ -1,154 +1,59 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+@layer base {
+  :root {
+    /* FIAB Color Palette */
+    --background: 154 40% 92%;
+    --foreground: 242 35% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 242 35% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 242 35% 16%;
+    --primary: 242 35% 16%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 194 18% 52%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 160 24% 70%;
+    --muted-foreground: 242 35% 16%;
+    --accent: 160 24% 70%;
+    --accent-foreground: 242 35% 16%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 30% 84%;
+    --input: 160 30% 84%;
+    --ring: 242 35% 16%;
+    --radius: 0.625rem;
+  }
 
-:root {
-  /* FIAB Color Palette */
-  --background: #e7f2ef;
-  --foreground: #19183b;
-  --card: #ffffff;
-  --card-foreground: #19183b;
-  --popover: #ffffff;
-  --popover-foreground: #19183b;
-  --primary: #19183b;
-  --primary-foreground: #ffffff;
-  --secondary: #708993;
-  --secondary-foreground: #ffffff;
-  --muted: #a1c2bd;
-  --muted-foreground: #19183b;
-  --accent: #a1c2bd;
-  --accent-foreground: #19183b;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #d1e3df;
-  --input: #d1e3df;
-  --ring: #19183b;
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #19183b;
-  --sidebar-primary: #19183b;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #a1c2bd;
-  --sidebar-accent-foreground: #19183b;
-  --sidebar-border: #d1e3df;
-  --sidebar-ring: #19183b;
-}
-
-.dark {
-  /* Dark mode - inverted FIAB palette */
-  --background: #19183b;
-  --foreground: #e7f2ef;
-  --card: #2a2952;
-  --card-foreground: #e7f2ef;
-  --popover: #2a2952;
-  --popover-foreground: #e7f2ef;
-  --primary: #e7f2ef;
-  --primary-foreground: #19183b;
-  --secondary: #708993;
-  --secondary-foreground: #ffffff;
-  --muted: #4a4969;
-  --muted-foreground: #a1c2bd;
-  --accent: #a1c2bd;
-  --accent-foreground: #19183b;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #4a4969;
-  --input: #4a4969;
-  --ring: #a1c2bd;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #2a2952;
-  --sidebar-foreground: #e7f2ef;
-  --sidebar-primary: #a1c2bd;
-  --sidebar-primary-foreground: #19183b;
-  --sidebar-accent: #4a4969;
-  --sidebar-accent-foreground: #e7f2ef;
-  --sidebar-border: #4a4969;
-  --sidebar-ring: #a1c2bd;
-}
-
-@theme inline {
-  --font-sans: "Inter", "Inter Fallback";
-
-  /* FIAB Color Palette - Easily customizable */
-  --color-primary: #19183b;
-  --color-secondary: #708993;
-  --color-accent: #a1c2bd;
-  --color-background: #e7f2ef;
-  --color-text: #19183b;
-
-  /* Semantic tokens */
-  --color-background: #e7f2ef;
-  --color-foreground: #19183b;
-  --color-card: #ffffff;
-  --color-card-foreground: #19183b;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #19183b;
-  --color-primary: #19183b;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #708993;
-  --color-secondary-foreground: #ffffff;
-  --color-muted: #a1c2bd;
-  --color-muted-foreground: #19183b;
-  --color-accent: #a1c2bd;
-  --color-accent-foreground: #19183b;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #d1e3df;
-  --color-input: #d1e3df;
-  --color-ring: #19183b;
-  --radius: 0.75rem;
-
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  .dark {
+    /* Dark mode - inverted FIAB palette */
+    --background: 242 35% 16%;
+    --foreground: 154 40% 92%;
+    --card: 242 25% 20%;
+    --card-foreground: 154 40% 92%;
+    --popover: 242 25% 20%;
+    --popover-foreground: 154 40% 92%;
+    --primary: 154 40% 92%;
+    --primary-foreground: 242 35% 16%;
+    --secondary: 194 18% 52%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 242 20% 35%;
+    --muted-foreground: 160 24% 70%;
+    --accent: 160 24% 70%;
+    --accent-foreground: 242 35% 16%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 242 20% 35%;
+    --input: 242 20% 35%;
+    --ring: 160 24% 70%;
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
