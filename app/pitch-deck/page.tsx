@@ -6,7 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { FileText, Download, Sparkles } from "lucide-react"
+import { FileText, Download, Sparkles, Loader2, CheckCircle2, Edit } from "lucide-react"
+
+interface Slide {
+  index: number
+  title: string
+  headline: string
+  bulletPoints: string[]
+  description: string
+}
+
+interface PitchContent {
+  slides: Slide[]
+}
 
 export default function PitchDeckPage() {
   const [formData, setFormData] = useState({
@@ -15,18 +27,108 @@ export default function PitchDeckPage() {
     problem: "",
     solution: "",
   })
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [deckGenerated, setDeckGenerated] = useState(false)
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [pitchContent, setPitchContent] = useState<PitchContent | null>(null)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleGenerate = () => {
-    setIsGenerating(true)
-    setTimeout(() => {
-      setDeckGenerated(true)
-      setIsGenerating(false)
-    }, 2000)
+  const handleGenerateContent = async () => {
+    setIsGeneratingContent(true)
+    setError(null)
+    
+    try {
+      console.log("Sending request to generate pitch content...", formData);
+      
+      const response = await fetch("/api/generate-pitch-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      console.log("Response status:", response.status);
+      
+      const data = await response.json()
+      console.log("Response data:", data);
+
+      if (!response.ok) {
+        console.error("API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          details: data.details,
+          type: data.type
+        });
+        
+        // Create detailed error message
+        let errorMessage = data.error || "Failed to generate pitch content";
+        if (data.details) {
+          errorMessage += `\n\nDetails: ${data.details}`;
+        }
+        if (data.type) {
+          errorMessage += `\n\nError Type: ${data.type}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Validate response structure
+      if (!data.slides || !Array.isArray(data.slides)) {
+        console.error("Invalid response structure:", data);
+        throw new Error("Invalid response structure from API. Expected slides array but got: " + JSON.stringify(data).substring(0, 100));
+      }
+
+      console.log("Successfully received", data.slides.length, "slides");
+      setPitchContent(data)
+    } catch (err: any) {
+      const errorMessage = err.message || "Failed to generate pitch content. Please try again."
+      setError(errorMessage)
+      console.error("Frontend Error:", err)
+    } finally {
+      setIsGeneratingContent(false)
+    }
+  }
+
+  const handleGeneratePDF = async () => {
+    if (!pitchContent?.slides) return
+
+    setIsGeneratingPDF(true)
+    setError(null)
+    
+    try {
+      const response = await fetch("/api/generate-pitch-deck", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ slides: pitchContent.slides }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to generate PDF")
+      }
+
+      const result = await response.json()
+      setPdfUrl(result.pdfUrl)
+    } catch (err: any) {
+      setError(err.message || "Failed to generate PDF")
+      console.error("Error:", err)
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
+  const handleDownloadPDF = () => {
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank")
+    }
   }
 
   const sections = [
+    { title: "Cover", description: "Title and tagline" },
     { title: "Problem", description: "What problem are you solving?" },
     { title: "Solution", description: "Your unique solution" },
     { title: "Market Size", description: "Total addressable market" },
@@ -35,8 +137,7 @@ export default function PitchDeckPage() {
     { title: "Business Model", description: "How you make money" },
     { title: "Competition", description: "Competitive landscape" },
     { title: "Team", description: "Who's building this" },
-    { title: "Financials", description: "Projections and metrics" },
-    { title: "Ask", description: "What you're raising" },
+    { title: "Financials & Ask", description: "Investment opportunity" },
   ]
 
   return (
@@ -47,6 +148,27 @@ export default function PitchDeckPage() {
           Create a professional investor pitch deck in minutes. AI-powered generation for all essential sections.
         </p>
       </div>
+
+      {error && (
+        <Card className="mb-6 border-red-500 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800 mb-1">Error Generating Content</h3>
+                <p className="text-sm text-red-700 whitespace-pre-wrap">{error}</p>
+                <p className="text-xs text-red-600 mt-2">
+                  💡 Check your browser console (F12) for more details
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -60,7 +182,7 @@ export default function PitchDeckPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="startupName">Startup Name</Label>
+                <Label htmlFor="startupName">Startup Name *</Label>
                 <Input
                   id="startupName"
                   placeholder="E.g., EcoThread"
@@ -70,7 +192,7 @@ export default function PitchDeckPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="concept">One-Line Concept</Label>
+                <Label htmlFor="concept">One-Line Concept *</Label>
                 <Input
                   id="concept"
                   placeholder="E.g., Sustainable fashion marketplace connecting eco-conscious consumers with ethical brands"
@@ -80,7 +202,7 @@ export default function PitchDeckPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="problem">Problem Statement</Label>
+                <Label htmlFor="problem">Problem Statement (Optional)</Label>
                 <Textarea
                   id="problem"
                   placeholder="What problem does your startup solve?"
@@ -91,7 +213,7 @@ export default function PitchDeckPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="solution">Your Solution</Label>
+                <Label htmlFor="solution">Your Solution (Optional)</Label>
                 <Textarea
                   id="solution"
                   placeholder="How does your product/service solve this problem?"
@@ -102,51 +224,90 @@ export default function PitchDeckPage() {
               </div>
 
               <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || !formData.startupName || !formData.concept}
+                onClick={handleGenerateContent}
+                disabled={isGeneratingContent || !formData.startupName || !formData.concept}
                 className="w-full"
               >
-                {isGenerating ? (
+                {isGeneratingContent ? (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Deck...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Content...
                   </>
                 ) : (
                   <>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate Pitch Deck
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Pitch Content
                   </>
                 )}
               </Button>
             </CardContent>
           </Card>
 
-          {deckGenerated && (
+          {pitchContent && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Your Pitch Deck</CardTitle>
-                <CardDescription>Review and customize each section before downloading</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      Your Pitch Deck Content
+                    </CardTitle>
+                    <CardDescription>Review the generated slides</CardDescription>
+                  </div>
+                  <Button onClick={handleGeneratePDF} disabled={isGeneratingPDF}>
+                    {isGeneratingPDF ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Generate PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {sections.map((section, index) => (
+                  {pitchContent.slides.map((slide, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between rounded-lg border border-border bg-accent/5 p-4"
+                      className="flex items-start justify-between rounded-lg border border-border bg-accent/5 p-4"
                     >
-                      <div>
-                        <p className="font-medium">{section.title}</p>
-                        <p className="text-sm text-muted-foreground">{section.description}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 text-xs font-medium">
+                            {index + 1}
+                          </span>
+                          <p className="font-semibold text-lg">{slide.title}</p>
+                        </div>
+                        <p className="font-medium text-sm text-primary mb-2">{slide.headline}</p>
+                        <ul className="text-sm text-muted-foreground space-y-1 ml-8 list-disc">
+                          {slide.bulletPoints.map((point, idx) => (
+                            <li key={idx}>{point}</li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-muted-foreground mt-2 italic">{slide.description}</p>
                       </div>
-                      <Button size="sm" variant="ghost">
-                        Edit
-                      </Button>
                     </div>
                   ))}
                 </div>
-                <Button className="mt-6 w-full">
+              </CardContent>
+            </Card>
+          )}
+
+          {pdfUrl && (
+            <Card className="mt-6 border-green-500 bg-green-50">
+              <CardHeader>
+                <CardTitle className="text-green-700">PDF Ready!</CardTitle>
+                <CardDescription>Your pitch deck is ready to download</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleDownloadPDF} className="w-full">
                   <Download className="mr-2 h-4 w-4" />
-                  Download as PDF
+                  Download Pitch Deck PDF
                 </Button>
               </CardContent>
             </Card>
