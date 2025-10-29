@@ -15,13 +15,25 @@ export default function IdeaGenerationPage() {
     if (!prompt.trim()) return
 
     setIsGenerating(true)
-    // Simulate AI generation
+    const response = await fetch("/api/idea-generation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      setIdeas([data.idea, ...ideas])
+      setIsGenerating(false)
+    } else {
+      // Fallback mock idea on error
     setTimeout(() => {
       const newIdea = `Based on "${prompt}":\n\nStartup Idea: AI-powered solution that addresses this market need with innovative technology. This concept focuses on solving real problems for your target audience while maintaining scalability and market viability.`
       setIdeas([newIdea, ...ideas])
       setIsGenerating(false)
     }, 2000)
   }
+}
 
   return (
     <div className="container mx-auto px-4 py-12">

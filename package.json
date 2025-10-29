@@ -9,6 +9,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "chromadb": "^3.0.17",
+    "@chroma-core/default-embed": "^0.1.8",
     "@google/genai": "^1.27.0",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
@@ -71,6 +73,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@gradio/client": "^2.0.0-dev.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
