@@ -46,7 +46,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-background to-accent/10 px-4 py-24 md:py-32">
+      <section className="relative overflow-hidden bg-linear-to-b from-background to-accent/10 px-4 py-24 md:py-32">
         <div className="container mx-auto">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-6 inline-block rounded-full bg-accent/20 px-4 py-1.5 text-sm font-medium text-primary">
