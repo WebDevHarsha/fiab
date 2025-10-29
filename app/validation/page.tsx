@@ -1,37 +1,85 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, Upload, Sparkles } from "lucide-react"
+import { extractText } from "@/lib/parseFile" // parser for PDF/DOCX
 
 export default function ValidationPage() {
-  const [idea, setIdea] = useState("")
+  const [idea, setIdea] = useState("") // typed or parsed text
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
+  const [pdfText, setPdfText] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null) // ref for hidden input
 
+
+    useEffect(() => {
+    if (pdfText) {
+      console.log("Extracted Text from state:", pdfText)
+    }
+  }, [pdfText])
+  
+
+  // Trigger hidden file input
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  // Handle file upload & parsing
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setUploadError("")
+      setIsUploading(true)
+      setPdfText("Parsing file...") // placeholder while parsing
+
+      const text = await extractText(file) // parse PDF/DOCX
+      setPdfText(text) 
+      // setIdea(text)// fill textarea
+      console.log("Extracted Text:", pdfText) // ✨ for testing in terminal
+
+    } catch (err: any) {
+      console.error(err)
+      setUploadError(err.message || "Failed to parse file.")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  // TEMP validation logic (replace with real validation later)
   const handleValidate = () => {
+    if (!idea.trim()) return
+
     setIsValidating(true)
+
     setTimeout(() => {
+      const score = Math.min(100, Math.max(0, idea.length % 101)) // dummy score
+
       setValidationResult({
-        overallScore: 78,
+        overallScore: score,
         categories: [
-          { name: "Market Opportunity", score: 85, feedback: "Strong market potential with clear demand" },
-          { name: "Uniqueness", score: 72, feedback: "Good differentiation but competitive space" },
-          { name: "Feasibility", score: 80, feedback: "Technically achievable with current resources" },
-          { name: "Scalability", score: 75, feedback: "Good growth potential with proper execution" },
+          { name: "Market Opportunity", score: score - 5, feedback: "Temporary feedback" },
+          { name: "Uniqueness", score: score - 10, feedback: "Temporary feedback" },
+          { name: "Feasibility", score: score - 8, feedback: "Temporary feedback" },
+          { name: "Scalability", score: score - 7, feedback: "Temporary feedback" },
         ],
         recommendations: [
-          "Focus on a specific niche market initially",
-          "Develop a clear competitive moat",
-          "Build an MVP to validate assumptions",
-          "Identify key metrics for success",
+          "Focus on core problem",
+          "Clarify target audience",
+          "Highlight unique solution aspects",
+          "Prepare MVP or prototype",
         ],
       })
+
       setIsValidating(false)
-    }, 2000)
+    }, 1500)
   }
 
   return (
@@ -51,17 +99,18 @@ export default function ValidationPage() {
                 <CheckCircle className="h-5 w-5 text-accent" />
                 Submit for Validation
               </CardTitle>
-              <CardDescription>Paste your idea or upload your pitch deck for comprehensive analysis</CardDescription>
+              <CardDescription>Paste your idea or upload your pitch deck for analysis</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
-                placeholder="Describe your startup idea in detail... Include the problem, solution, target market, and business model."
+                placeholder="Describe your startup idea in detail... Include problem, solution, target market, business model."
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
                 className="min-h-[200px]"
               />
 
               <div className="flex items-center gap-4">
+                {/* Validate button */}
                 <Button onClick={handleValidate} disabled={isValidating || !idea.trim()} className="flex-1">
                   {isValidating ? (
                     <>
@@ -75,16 +124,29 @@ export default function ValidationPage() {
                     </>
                   )}
                 </Button>
-                <Button variant="outline">
+
+                {/* Upload Deck button */}
+                <input
+                  type="file"
+                  accept=".pdf,.docx"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  style={{ display: "none" }}
+                />
+                <Button variant="outline" onClick={handleUploadClick} disabled={isUploading}>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload Deck
+                  {isUploading ? "Parsing..." : "Upload Deck"}
                 </Button>
               </div>
+
+              {/* Upload error */}
+              {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
             </CardContent>
           </Card>
 
           {validationResult && (
             <>
+              {/* Overall Score */}
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Validation Score</CardTitle>
@@ -101,6 +163,7 @@ export default function ValidationPage() {
                 </CardContent>
               </Card>
 
+              {/* Category Breakdown */}
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Category Breakdown</CardTitle>
@@ -120,6 +183,7 @@ export default function ValidationPage() {
                 </CardContent>
               </Card>
 
+              {/* Recommendations */}
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Recommendations</CardTitle>
@@ -140,6 +204,7 @@ export default function ValidationPage() {
           )}
         </div>
 
+        {/* What We Analyze Card */}
         <div>
           <Card>
             <CardHeader>
