@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import PptxGenJS from "pptxgenjs";
+import fs from "fs";
+import path from "path";
 
 export async function POST(req: Request) {
   try {
@@ -11,92 +14,99 @@ export async function POST(req: Request) {
       );
     }
 
-    const PLUSLIDE_API_KEY = process.env.PLUSLIDE_API_KEY;
-    const PLUSLIDE_PROJECT_ID = process.env.PLUSLIDE_PROJECT_ID;
+    console.log("=== PowerPoint Generation ===");
+    console.log("Processing", slides.length, "slides");
 
-    if (!PLUSLIDE_API_KEY) {
-      return NextResponse.json(
-        { error: "Pluslide API key not configured. Please add PLUSLIDE_API_KEY to .env.local" },
-        { status: 500 }
-      );
-    }
+    // Create new presentation
+    const pptx = new PptxGenJS();
+    
+    // Configure presentation
+    pptx.author = "AI Pitch Deck Generator";
+    pptx.company = "FIAB";
+    pptx.title = slides[0]?.title || "Startup Pitch Deck";
 
-    if (!PLUSLIDE_PROJECT_ID) {
-      return NextResponse.json(
-        { error: "Pluslide Project ID not configured. Please add PLUSLIDE_PROJECT_ID to .env.local" },
-        { status: 500 }
-      );
-    }
-
-    console.log("=== Pluslide PDF Generation ===");
-    console.log("Generating presentation for", slides.length, "slides");
-
-    const slideList = slides.map((slide: any) => {
-      const slideContent = `${slide.title}\n\n${slide.headline}\n\n${slide.bulletPoints.join('\n')}\n\n${slide.description}`;
+    // Add slides with content
+    slides.forEach((slideData: any, index: number) => {
+      const slide = pptx.addSlide();
       
-      return {
-        templateKey: "template-1",
-        content: {
-          text_1: slideContent
-        }
-      };
+      // Add title
+      slide.addText(slideData.title, {
+        x: 0.5,
+        y: 0.5,
+        w: 9,
+        h: 0.75,
+        fontSize: 36,
+        bold: true,
+        color: "363636",
+        align: "center"
+      });
+
+      // Add headline
+      slide.addText(slideData.headline, {
+        x: 0.5,
+        y: 1.5,
+        w: 9,
+        h: 0.6,
+        fontSize: 24,
+        color: "0066CC",
+        align: "center"
+      });
+
+      // Add bullet points
+      const bulletText = slideData.bulletPoints.map((point: string) => ({
+        text: point,
+        options: { bullet: true, fontSize: 18, color: "444444" }
+      }));
+
+      slide.addText(bulletText, {
+        x: 1,
+        y: 2.5,
+        w: 8,
+        h: 3,
+        fontSize: 18,
+        color: "444444"
+      });
+
+      // Add description
+      slide.addText(slideData.description, {
+        x: 1,
+        y: 5.75,
+        w: 8,
+        h: 1,
+        fontSize: 14,
+        color: "666666",
+        italic: true
+      });
+
+      // Add slide number
+      slide.addText(`${index + 1} / ${slides.length}`, {
+        x: 9,
+        y: 7,
+        w: 0.5,
+        h: 0.3,
+        fontSize: 12,
+        color: "999999",
+        align: "right"
+      });
     });
 
-    const requestBody = {
-      projectId: PLUSLIDE_PROJECT_ID,
-      presentation: {
-        slideList: slideList,
-        attributes: {
-          title: slides[0]?.title || "Pitch Deck",
-          author: "AI Generated",
-          subject: "Startup Pitch Deck"
-        }
-      }
-    };
+    // Save to buffer
+    const pptxBuffer = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
 
-    console.log("Sending request to Pluslide API...");
-    console.log("Project ID:", PLUSLIDE_PROJECT_ID);
-    console.log("Number of slides:", slideList.length);
+    // Save file to public directory
+    const outputPath = path.join(process.cwd(), "public", "generated-pitch.pptx");
+    fs.writeFileSync(outputPath, pptxBuffer);
 
-    const pluslideResponse = await fetch(
-      "https://app.pluslide.com/api/v1/project/export",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${PLUSLIDE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    if (!pluslideResponse.ok) {
-      const errorText = await pluslideResponse.text();
-      console.error("Pluslide API Error:", errorText);
-      console.error("Status:", pluslideResponse.status);
-      console.error("Status Text:", pluslideResponse.statusText);
-      
-      return NextResponse.json(
-        {
-          error: "Failed to generate presentation with Pluslide",
-          details: errorText,
-          status: pluslideResponse.status
-        },
-        { status: pluslideResponse.status }
-      );
-    }
-
-    const responseData = await pluslideResponse.json();
-    console.log("Pluslide Response:", responseData);
+    console.log("PowerPoint saved to:", outputPath);
 
     return NextResponse.json({
       success: true,
-      taskId: responseData.taskId,
-      message: "Presentation generation started. Task ID: " + responseData.taskId,
-      data: responseData,
+      message: "Presentation generated successfully",
+      downloadUrl: "/generated-pitch.pptx",
+      filename: "generated-pitch.pptx"
     });
   } catch (error: any) {
-    console.error("=== Fatal Error in PDF Generation ===");
+    console.error("=== Fatal Error in PowerPoint Generation ===");
     console.error("Error:", error.message);
     console.error("Stack:", error.stack);
     

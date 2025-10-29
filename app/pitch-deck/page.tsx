@@ -98,7 +98,7 @@ export default function PitchDeckPage() {
     setError(null)
     
     try {
-      console.log("Sending request to generate PDF...");
+      console.log("Sending request to generate PowerPoint...");
       
       const response = await fetch("/api/generate-pitch-deck", {
         method: "POST",
@@ -109,20 +109,17 @@ export default function PitchDeckPage() {
       })
 
       const result = await response.json()
-      console.log("PDF Generation Response:", result);
+      console.log("PowerPoint Generation Response:", result);
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to generate PDF")
+        throw new Error(result.error || "Failed to generate PowerPoint")
       }
 
-      // Pluslide returns a taskId - show success message
-      if (result.taskId) {
-        setError(`✅ Presentation generation started! Task ID: ${result.taskId}\n\nNote: Pluslide generates presentations asynchronously. Check the Pluslide dashboard to download your presentation once it's ready.`)
-      } else if (result.pdfUrl) {
-        setPdfUrl(result.pdfUrl)
+      if (result.downloadUrl) {
+        setPdfUrl(result.downloadUrl)
       }
     } catch (err: any) {
-      setError(err.message || "Failed to generate PDF")
+      setError(err.message || "Failed to generate PowerPoint")
       console.error("Error:", err)
     } finally {
       setIsGeneratingPDF(false)
@@ -135,7 +132,7 @@ export default function PitchDeckPage() {
     }
   }
 
-  const sections = [
+    const sections = [
     { title: "Cover", description: "Title and tagline" },
     { title: "Problem", description: "What problem are you solving?" },
     { title: "Solution", description: "Your unique solution" },
@@ -153,7 +150,7 @@ export default function PitchDeckPage() {
       <div className="mb-8">
         <h1 className="mb-4 text-4xl font-bold text-primary">Pitch Deck Generator</h1>
         <p className="text-lg text-secondary">
-          Create a professional investor pitch deck in minutes. AI-powered generation for all essential sections.
+          Create a professional 10-slide investor pitch deck in minutes. AI-powered generation for all essential sections.
         </p>
       </div>
 

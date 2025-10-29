@@ -40,7 +40,7 @@ Generate comprehensive pitch deck content for the following startup:
 **Problem:** ${problem || "Not specified"}
 **Solution:** ${solution || "Not specified"}
 
-Create a complete pitch deck with 5 slides. For each slide, provide:
+Create a complete pitch deck with 10 slides. For each slide, provide:
 - A compelling headline
 - 2-3 detailed bullet points
 - Supporting data or statistics (realistic estimates if not provided)
@@ -60,38 +60,73 @@ The JSON must have EXACTLY this structure:
   "slides": [
     {
       "index": 0,
-      "title": "Problem & Solution",
-      "headline": "The challenge we're solving",
-      "bulletPoints": ["Problem point 1", "Problem point 2", "Our solution"],
-      "description": "Problem and solution overview"
+      "title": "Cover",
+      "headline": "One-line compelling tagline",
+      "bulletPoints": ["Company name", "Date", "Presented by"],
+      "description": "Brief intro narrative"
     },
     {
       "index": 1,
-      "title": "Market Opportunity",
-      "headline": "Market size and opportunity",
-      "bulletPoints": ["TAM: $X billion", "Growth rate: X%", "Target segment"],
-      "description": "Market analysis"
+      "title": "Problem",
+      "headline": "The problem headline",
+      "bulletPoints": ["Point 1", "Point 2", "Point 3"],
+      "description": "Problem description"
     },
     {
       "index": 2,
-      "title": "Product & Traction",
-      "headline": "Our product and progress",
-      "bulletPoints": ["Key feature 1", "Key feature 2", "Current traction"],
-      "description": "Product overview and traction"
+      "title": "Solution",
+      "headline": "Our solution headline",
+      "bulletPoints": ["Feature 1", "Feature 2", "Feature 3"],
+      "description": "Solution description"
     },
     {
       "index": 3,
-      "title": "Business Model & Competition",
-      "headline": "How we make money and win",
-      "bulletPoints": ["Revenue model", "Competitive advantage", "Market position"],
-      "description": "Business model and competitive landscape"
+      "title": "Market Size",
+      "headline": "Market opportunity headline",
+      "bulletPoints": ["TAM: $X billion", "SAM: $X billion", "SOM: $X million"],
+      "description": "Market analysis"
     },
     {
       "index": 4,
-      "title": "Team & Ask",
-      "headline": "Who we are and what we need",
-      "bulletPoints": ["Founder expertise", "Raising: $X million", "Use of funds"],
-      "description": "Team and investment ask"
+      "title": "Product",
+      "headline": "How it works",
+      "bulletPoints": ["Step 1", "Step 2", "Step 3"],
+      "description": "Product walkthrough"
+    },
+    {
+      "index": 5,
+      "title": "Traction",
+      "headline": "Our progress",
+      "bulletPoints": ["Milestone 1", "Milestone 2", "Milestone 3"],
+      "description": "Current traction"
+    },
+    {
+      "index": 6,
+      "title": "Business Model",
+      "headline": "How we make money",
+      "bulletPoints": ["Revenue stream 1", "Revenue stream 2", "Revenue stream 3"],
+      "description": "Business model explanation"
+    },
+    {
+      "index": 7,
+      "title": "Competition",
+      "headline": "Competitive landscape",
+      "bulletPoints": ["Our advantage 1", "Our advantage 2", "Our advantage 3"],
+      "description": "Competitive analysis"
+    },
+    {
+      "index": 8,
+      "title": "Team",
+      "headline": "Meet the team",
+      "bulletPoints": ["Founder 1 - Role & Background", "Founder 2 - Role & Background", "Key advisor"],
+      "description": "Team overview"
+    },
+    {
+      "index": 9,
+      "title": "Financials & Ask",
+      "headline": "Investment opportunity",
+      "bulletPoints": ["Raising: $X million", "Valuation: $X million", "Use of funds"],
+      "description": "Financial projections and ask"
     }
   ]
 }
