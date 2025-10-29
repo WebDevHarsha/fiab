@@ -8,6 +8,63 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Megaphone, Video, FileText, ImageIcon, Sparkles } from "lucide-react"
+import { usePollinationsImage } from "@pollinations/react"
+
+// Image generation component
+const GeneratedImageComponent = ({ 
+  prompt, 
+  seed, 
+  onLoad 
+}: { 
+  prompt: string; 
+  seed: number; 
+  onLoad?: (url: string) => void;
+}) => {
+  const imageUrl = usePollinationsImage(prompt, {
+    width: 1024,
+    height: 1024,
+    seed: seed,
+    model: "gptimage",
+    nologo: true,
+  })
+
+  // Notify parent when image is loaded
+  if (imageUrl && onLoad) {
+    onLoad(imageUrl)
+  }
+
+  return (
+    <div className="relative group">
+      {imageUrl ? (
+        <>
+          <img
+            src={imageUrl}
+            alt={`Generated ad ${seed}`}
+            className="w-full h-auto rounded-lg border border-border shadow-sm"
+          />
+          <div className="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                const link = document.createElement("a")
+                link.href = imageUrl
+                link.download = `ad-image-${seed}.png`
+                link.click()
+              }}
+            >
+              Download
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="w-full aspect-square rounded-lg border border-border bg-muted flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function AdMakingPage() {
   const [adType, setAdType] = useState("")
@@ -15,29 +72,61 @@ export default function AdMakingPage() {
   const [description, setDescription] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedAds, setGeneratedAds] = useState<any[]>([])
+  const [shouldGenerateImages, setShouldGenerateImages] = useState(false)
+  const [imagePrompt, setImagePrompt] = useState("")
+  const [error, setError] = useState<string>("")
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
-      setGeneratedAds([
-        {
-          type: adType,
-          title: "Ad Concept 1",
-          content:
-            "Engaging hook that captures attention immediately, followed by clear value proposition and strong call-to-action.",
-          script:
-            "Scene 1: Problem visualization\nScene 2: Solution introduction\nScene 3: Product demonstration\nScene 4: Call to action",
-        },
-        {
-          type: adType,
-          title: "Ad Concept 2",
-          content:
-            "Emotional storytelling approach that connects with audience pain points and presents your product as the hero.",
-          script: "Opening: Relatable scenario\nMiddle: Transformation story\nClosing: Compelling offer",
-        },
-      ])
+    setError("")
+    setShouldGenerateImages(false)
+
+    try {
+      if (adType === "image") {
+        const prompt = `Professional advertisement for ${productName}. ${description}. High quality, modern design, eye-catching visuals, marketing poster style`
+        
+        setImagePrompt(prompt)
+        setShouldGenerateImages(true)
+        setGeneratedAds([
+          {
+            type: adType,
+            title: "AI-Generated Ad Images",
+            content: `Generating 4 unique ad images for ${productName}...`,
+          },
+        ])
+        setIsGenerating(false)
+      } else {
+        setTimeout(() => {
+          setGeneratedAds([
+            {
+              type: adType,
+              title: "Ad Concept 1",
+              content:
+                "Engaging hook that captures attention immediately, followed by clear value proposition and strong call-to-action.",
+              script:
+                adType === "video"
+                  ? "Scene 1: Problem visualization\nScene 2: Solution introduction\nScene 3: Product demonstration\nScene 4: Call to action"
+                  : undefined,
+            },
+            {
+              type: adType,
+              title: "Ad Concept 2",
+              content:
+                "Emotional storytelling approach that connects with audience pain points and presents your product as the hero.",
+              script:
+                adType === "video"
+                  ? "Opening: Relatable scenario\nMiddle: Transformation story\nClosing: Compelling offer"
+                  : undefined,
+            },
+          ])
+          setIsGenerating(false)
+        }, 1000)
+      }
+    } catch (err: any) {
+      console.error("Error generating ads:", err)
+      setError(err.message || "Failed to generate ads. Please try again.")
       setIsGenerating(false)
-    }, 2000)
+    }
   }
 
   return (
@@ -127,8 +216,35 @@ export default function AdMakingPage() {
                   </>
                 )}
               </Button>
+
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {shouldGenerateImages && imagePrompt && (
+            <div className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Ad Images</CardTitle>
+                  <CardDescription>
+                    AI-generated images for your {productName} advertisement
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <GeneratedImageComponent prompt={imagePrompt} seed={42} />
+                    <GeneratedImageComponent prompt={imagePrompt} seed={123} />
+                    <GeneratedImageComponent prompt={imagePrompt} seed={456} />
+                    <GeneratedImageComponent prompt={imagePrompt} seed={789} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {generatedAds.length > 0 && (
             <div className="mt-6 space-y-6">
@@ -219,3 +335,4 @@ export default function AdMakingPage() {
     </div>
   )
 }
+
