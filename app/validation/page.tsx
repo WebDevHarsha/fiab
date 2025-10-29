@@ -15,7 +15,7 @@ export default function ValidationPage() {
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
   const [pdfText, setPdfText] = useState("")
-  const [summary, setSummary] = useState<any>(null)
+  const [_summary, setSummary] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // ref for hidden input
 
 
