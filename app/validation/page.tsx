@@ -15,7 +15,8 @@ export default function ValidationPage() {
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
   const [pdfText, setPdfText] = useState("")
-  const [_summary, setSummary] = useState<any>(null)
+  const [summary, setSummary] = useState<any>(null)
+  const [evidence, setEvidence] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null) // ref for hidden input
 
 
@@ -56,44 +57,44 @@ export default function ValidationPage() {
 
 
   const handleValidate = async () => {
-    if (!idea.trim()) return
-    setIsValidating(true)
-    try {
-      const response = await fetch("/api/ai-summary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: idea + pdfText }),
-      })
+  if (!idea.trim()) return
+  setIsValidating(true)
 
-      const data = await response.json()
-      setSummary(data)
-      console.log("Summary:", data)
-    } catch (err) {
-      console.error("Validation request failed:", err)
-    }
+  try {
+    // 1️⃣ Generate summary
+    const summaryRes = await fetch("/api/ai-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: idea + pdfText }),
+    })
+    const summaryData = await summaryRes.json()
+    setSummary(summaryData)
 
-    setTimeout(() => {
-      const score = Math.min(100, Math.max(0, idea.length % 101)) // dummy score
+    // 2️⃣ Fetch news-based evidence
+    const evidenceRes = await fetch("/api/fetch-evidence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(summaryData),
+    })
+    const evidenceData = await evidenceRes.json()
+    setEvidence(evidenceData.evidence || [])
 
-      setValidationResult({
-        overallScore: score,
-        categories: [
-          { name: "Market Opportunity", score: score - 5, feedback: "Temporary feedback" },
-          { name: "Uniqueness", score: score - 10, feedback: "Temporary feedback" },
-          { name: "Feasibility", score: score - 8, feedback: "Temporary feedback" },
-          { name: "Scalability", score: score - 7, feedback: "Temporary feedback" },
-        ],
-        recommendations: [
-          "Focus on core problem",
-          "Clarify target audience",
-          "Highlight unique solution aspects",
-          "Prepare MVP or prototype",
-        ],
-      })
+    // 3️⃣ Grounded validation scoring using Gemini
+    const validateRes = await fetch("/api/ai-validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: summaryData, evidence: evidenceData.evidence }),
+    })
+    const validatedScores = await validateRes.json()
 
-      setIsValidating(false)
-    }, 1500)
+    setValidationResult(validatedScores)
+  } catch (err) {
+    console.error("Full validation pipeline failed:", err)
+  } finally {
+    setIsValidating(false)
   }
+}
+
 
   return (
     <div className="container mx-auto px-4 py-12">
