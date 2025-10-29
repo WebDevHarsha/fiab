@@ -24,7 +24,7 @@ const GeneratedImageComponent = ({
     width: 1024,
     height: 1024,
     seed: seed,
-    model: "gptimage",
+    model: "kontext",
     nologo: true,
   })
 
