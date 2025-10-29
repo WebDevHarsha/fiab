@@ -98,6 +98,8 @@ export default function PitchDeckPage() {
     setError(null)
     
     try {
+      console.log("Sending request to generate PDF...");
+      
       const response = await fetch("/api/generate-pitch-deck", {
         method: "POST",
         headers: {
@@ -106,13 +108,19 @@ export default function PitchDeckPage() {
         body: JSON.stringify({ slides: pitchContent.slides }),
       })
 
+      const result = await response.json()
+      console.log("PDF Generation Response:", result);
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to generate PDF")
+        throw new Error(result.error || "Failed to generate PDF")
       }
 
-      const result = await response.json()
-      setPdfUrl(result.pdfUrl)
+      // Pluslide returns a taskId - show success message
+      if (result.taskId) {
+        setError(`✅ Presentation generation started! Task ID: ${result.taskId}\n\nNote: Pluslide generates presentations asynchronously. Check the Pluslide dashboard to download your presentation once it's ready.`)
+      } else if (result.pdfUrl) {
+        setPdfUrl(result.pdfUrl)
+      }
     } catch (err: any) {
       setError(err.message || "Failed to generate PDF")
       console.error("Error:", err)

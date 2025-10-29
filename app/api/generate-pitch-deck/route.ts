@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { slides, templateId } = await req.json();
+    const { slides } = await req.json();
 
     if (!slides || !Array.isArray(slides)) {
       return NextResponse.json(
@@ -11,93 +11,95 @@ export async function POST(req: Request) {
       );
     }
 
-    const DYNAPICTURES_API_KEY = process.env.DYNAPICTURES_API_KEY;
-    const DYNAPICTURES_TEMPLATE_ID = templateId || process.env.DYNAPICTURES_TEMPLATE_ID;
+    const PLUSLIDE_API_KEY = process.env.PLUSLIDE_API_KEY;
+    const PLUSLIDE_PROJECT_ID = process.env.PLUSLIDE_PROJECT_ID;
 
-    if (!DYNAPICTURES_API_KEY) {
+    if (!PLUSLIDE_API_KEY) {
       return NextResponse.json(
-        { error: "DynaPictures API key not configured." },
+        { error: "Pluslide API key not configured. Please add PLUSLIDE_API_KEY to .env.local" },
         { status: 500 }
       );
     }
 
-    if (!DYNAPICTURES_TEMPLATE_ID) {
+    if (!PLUSLIDE_PROJECT_ID) {
       return NextResponse.json(
-        { error: "DynaPictures Template ID not configured." },
+        { error: "Pluslide Project ID not configured. Please add PLUSLIDE_PROJECT_ID to .env.local" },
         { status: 500 }
       );
     }
 
-    // Format pages for DynaPictures API
-    const pages = slides.map((slide: any) => ({
-      index: slide.index,
-      layers: [
-        {
-          name: "title",
-          text: slide.title || "",
-        },
-        {
-          name: "headline",
-          text: slide.headline || "",
-        },
-        {
-          name: "bullet1",
-          text: slide.bulletPoints?.[0] || "",
-        },
-        {
-          name: "bullet2",
-          text: slide.bulletPoints?.[1] || "",
-        },
-        {
-          name: "bullet3",
-          text: slide.bulletPoints?.[2] || "",
-        },
-        {
-          name: "description",
-          text: slide.description || "",
-        },
-      ],
-    }));
+    console.log("=== Pluslide PDF Generation ===");
+    console.log("Generating presentation for", slides.length, "slides");
 
-    // Call DynaPictures API for PDF generation
-    const dynapicturesResponse = await fetch(
-      `https://api.dynapictures.com/designs/${DYNAPICTURES_TEMPLATE_ID}`,
+    const slideList = slides.map((slide: any) => {
+      const slideContent = `${slide.title}\n\n${slide.headline}\n\n${slide.bulletPoints.join('\n')}\n\n${slide.description}`;
+      
+      return {
+        templateKey: "template-1",
+        content: {
+          text_1: slideContent
+        }
+      };
+    });
+
+    const requestBody = {
+      projectId: PLUSLIDE_PROJECT_ID,
+      presentation: {
+        slideList: slideList,
+        attributes: {
+          title: slides[0]?.title || "Pitch Deck",
+          author: "AI Generated",
+          subject: "Startup Pitch Deck"
+        }
+      }
+    };
+
+    console.log("Sending request to Pluslide API...");
+    console.log("Project ID:", PLUSLIDE_PROJECT_ID);
+    console.log("Number of slides:", slideList.length);
+
+    const pluslideResponse = await fetch(
+      "https://app.pluslide.com/api/v1/project/export",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${DYNAPICTURES_API_KEY}`,
+          "Authorization": `Bearer ${PLUSLIDE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          format: "pdf",
-          metadata: "Pitch Deck",
-          pages,
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
-    if (!dynapicturesResponse.ok) {
-      const errorText = await dynapicturesResponse.text();
-      console.error("DynaPictures API Error:", errorText);
+    if (!pluslideResponse.ok) {
+      const errorText = await pluslideResponse.text();
+      console.error("Pluslide API Error:", errorText);
+      console.error("Status:", pluslideResponse.status);
+      console.error("Status Text:", pluslideResponse.statusText);
+      
       return NextResponse.json(
         {
-          error: "Failed to generate PDF with DynaPictures",
+          error: "Failed to generate presentation with Pluslide",
           details: errorText,
+          status: pluslideResponse.status
         },
-        { status: dynapicturesResponse.status }
+        { status: pluslideResponse.status }
       );
     }
 
-    const pdfData = await dynapicturesResponse.json();
+    const responseData = await pluslideResponse.json();
+    console.log("Pluslide Response:", responseData);
 
     return NextResponse.json({
       success: true,
-      pdfUrl: pdfData.pdfUrl || pdfData.imageUrl,
-      thumbnailUrl: pdfData.thumbnailUrl,
-      data: pdfData,
+      taskId: responseData.taskId,
+      message: "Presentation generation started. Task ID: " + responseData.taskId,
+      data: responseData,
     });
   } catch (error: any) {
-    console.error("Error generating pitch deck PDF:", error);
+    console.error("=== Fatal Error in PDF Generation ===");
+    console.error("Error:", error.message);
+    console.error("Stack:", error.stack);
+    
     return NextResponse.json(
       { error: "Failed to generate pitch deck", details: error.message },
       { status: 500 }
