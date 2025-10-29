@@ -15,6 +15,7 @@ export default function ValidationPage() {
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
   const [pdfText, setPdfText] = useState("")
+  const [summary, setSummary] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null) // ref for hidden input
 
 
@@ -53,11 +54,23 @@ export default function ValidationPage() {
     }
   }
 
-  // TEMP validation logic (replace with real validation later)
-  const handleValidate = () => {
-    if (!idea.trim()) return
 
+  const handleValidate = async () => {
+    if (!idea.trim()) return
     setIsValidating(true)
+    try {
+      const response = await fetch("/api/ai-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: idea + pdfText }),
+      })
+
+      const data = await response.json()
+      setSummary(data)
+      console.log("Summary:", data)
+    } catch (err) {
+      console.error("Validation request failed:", err)
+    }
 
     setTimeout(() => {
       const score = Math.min(100, Math.max(0, idea.length % 101)) // dummy score
