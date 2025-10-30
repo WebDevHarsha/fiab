@@ -1,7 +1,11 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Lightbulb, FileText, CheckCircle, Megaphone, Target, TrendingUp } from "lucide-react"
 import Link from "next/link"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function DashboardPage() {
   const tools = [
@@ -49,14 +53,21 @@ export default function DashboardPage() {
     { action: "Generated ad concepts", tool: "Ad Making", time: "3 days ago" },
   ]
 
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-8">
-        <h1 className="mb-4 text-4xl font-bold text-primary">Dashboard</h1>
-        <p className="text-lg text-secondary">Welcome back! Here's an overview of your startup toolkit activity.</p>
-      </div>
+  const { user } = useAuth()
 
-      <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+  return (
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-8">
+          <h1 className="mb-4 text-4xl font-bold text-primary">
+            Dashboard
+          </h1>
+          <p className="text-lg text-secondary">
+            Welcome back{user?.displayName ? `, ${user.displayName}` : ""}! Here's an overview of your startup toolkit activity.
+          </p>
+        </div>
+
+        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
           <CardHeader>
             <CardTitle className="text-2xl">Total Projects</CardTitle>
@@ -193,6 +204,7 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   )
 }
