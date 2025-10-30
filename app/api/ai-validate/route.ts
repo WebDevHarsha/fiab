@@ -1,54 +1,81 @@
-import { NextResponse } from "next/server"
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+// Initialize Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-export async function POST(req: Request) {
+// Define the validation result structure
+interface ValidationCategory {
+  name: string;
+  score: number;
+  feedback: string;
+}
+
+interface ValidationResult {
+  overallScore: number;
+  categories: ValidationCategory[];
+  recommendations: string[];
+  error?: string;
+  raw?: string;
+}
+
+export async function POST(req: Request): Promise<Response> {
   try {
-    const { summary, evidence } = await req.json()
+    const { summary, articles } = await req.json();
 
     const prompt = `
-You are a startup idea validation expert.
+You are a startup pitch validator AI.
+Use the following context (grounding data) to assess the startup idea.
 
-### Summary (AI-generated)
+### Summary:
 ${JSON.stringify(summary, null, 2)}
 
-### Evidence from real news sources
-${JSON.stringify(evidence, null, 2)}
+### Market Research (Articles):
+${JSON.stringify(articles, null, 2)}
 
-Evaluate the startup based on these **four criteria**:
-1. Market Opportunity
-2. Uniqueness
-3. Feasibility
-4. Scalability
+Based on this information, provide a JSON structured score in the exact format:
 
-For each, assign a score (0–100) and give short grounded feedback using the evidence.
-Finally, compute an overall score and list 3–5 concise actionable recommendations.
-
-Return a JSON object in this format:
 {
-  "overallScore": number,
+  "overallScore": number (0-100),
   "categories": [
-    {"name": "Market Opportunity", "score": number, "feedback": string},
-    {"name": "Uniqueness", "score": number, "feedback": string},
-    {"name": "Feasibility", "score": number, "feedback": string},
-    {"name": "Scalability", "score": number, "feedback": string}
+    { "name": "Market Opportunity", "score": number, "feedback": string },
+    { "name": "Uniqueness", "score": number, "feedback": string },
+    { "name": "Feasibility", "score": number, "feedback": string },
+    { "name": "Scalability", "score": number, "feedback": string }
   ],
-  "recommendations": [string]
+  "recommendations": [ "string", "string", "string", ... ]
 }
-`
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
+Respond **only** with the JSON output.`;
 
-    // 🧹 Clean JSON if Gemini adds extra text
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    const validated = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Invalid response format" }
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text().replace(/```json\s*/g, "").replace(/```/g, "").trim();
 
-    return NextResponse.json(validated)
-  } catch (err: any) {
-    console.error("Validation scoring failed:", err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    // Try to parse JSON safely
+    let jsonResponse: ValidationResult;
+    try {
+      jsonResponse = JSON.parse(text);
+    } catch {
+      jsonResponse = {
+        overallScore: 0,
+        categories: [],
+        recommendations: [],
+        error: "Failed to parse model output",
+        raw: text,
+      };
+    }
+
+    return new Response(JSON.stringify(jsonResponse), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
+    console.error("Error in /api/validate:", error);
+    return new Response(
+      JSON.stringify({ error: error.message || "Internal Server Error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

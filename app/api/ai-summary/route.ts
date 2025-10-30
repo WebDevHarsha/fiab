@@ -15,13 +15,47 @@ export async function POST(req: Request) {
     const prompt = `
 You are an expert startup analyst.
 Analyze the following pitch deck text and produce a **detailed summary**.
-
+available keywords: [
+    "artificial intelligence",
+    "machine learning",
+    "robotics",
+    "consumer electronics",
+    "cloud computing",
+    "software as a service",
+    "renewable energy",
+    "energy storage",
+    "fintech",
+    "blockchain technology",
+    "education technology",
+    "health tech",
+    "agritech",
+    "food technology",
+    "climate tech",
+    "sustainability tech",
+    "electric vehicles",
+    "mobility tech",
+    "retail technology",
+    "e-commerce",
+    "travel tech",
+    "fashion tech",
+    "proptech",
+    "cybersecurity",
+    "gaming",
+    "digital media",
+    "social media",
+    "space technology",
+    "biotechnology",
+    "advanced manufacturing",
+    "quantum computing",
+  ]
+    Use *only* the available keywords that best describe the startup. Atleast one keyword must be included.
 ### Output Format
 Respond **only** in valid JSON (no explanations, no markdown).
 The JSON must have the following structure:
 
 {
   "startupName": "",
+  "keywords": [""],
   "mission": "",
   "problem": "",
   "solution": "",

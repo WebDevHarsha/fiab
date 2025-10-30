@@ -9,7 +9,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "chromadb": "^3.0.17",
     "@chroma-core/default-embed": "^0.1.8",
     "@google/genai": "^1.27.0",
     "@google/generative-ai": "^0.24.1",
@@ -46,6 +45,7 @@
     "@vercel/analytics": "1.3.1",
     "axios": "^1.13.1",
     "canvas": "^3.2.0",
+    "chromadb": "^3.0.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
