@@ -2,11 +2,21 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut, User } from "lucide-react"
 import { useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { signOutUser } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOutUser()
+    router.push("/")
+  }
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -43,12 +53,31 @@ export function Navbar() {
           </div>
 
           <div className="hidden items-center gap-4 md:flex">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/signup">Get Started</Link>
-            </Button>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4" />
+                      <span>{user.displayName || user.email}</span>
+                    </div>
+                    <Button variant="ghost" onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" asChild>
+                      <Link href="/login">Sign In</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/signup">Get Started</Link>
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -72,12 +101,31 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4">
-                <Button variant="ghost" asChild>
-                  <Link href="/login">Sign In</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/signup">Get Started</Link>
-                </Button>
+                {!loading && (
+                  <>
+                    {user ? (
+                      <>
+                        <div className="flex items-center gap-2 text-sm px-3 py-2">
+                          <User className="h-4 w-4" />
+                          <span>{user.displayName || user.email}</span>
+                        </div>
+                        <Button variant="ghost" onClick={handleSignOut}>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" asChild>
+                          <Link href="/login">Sign In</Link>
+                        </Button>
+                        <Button asChild>
+                          <Link href="/signup">Get Started</Link>
+                        </Button>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
