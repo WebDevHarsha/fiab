@@ -9,93 +9,115 @@ import { CheckCircle, Upload, Sparkles } from "lucide-react"
 import { extractText } from "@/lib/parseFile" // parser for PDF/DOCX
 
 export default function ValidationPage() {
-  const [idea, setIdea] = useState("") // typed or parsed text
+  const [idea, setIdea] = useState("") // User input or parsed text
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState("")
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<any>(null)
   const [pdfText, setPdfText] = useState("")
   const [summary, setSummary] = useState<any>(null)
-  const [evidence, setEvidence] = useState<any[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null) // ref for hidden input
+  const [articles, setArticles] = useState<any>(null)
+  const [keywords, setKeywords] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // --- File Upload ---
+  const handleUploadClick = () => fileInputRef.current?.click()
 
-    useEffect(() => {
-    if (pdfText) {
-      console.log("Extracted Text from state:", pdfText)
-    }
-  }, [pdfText])
-  
-
-  // Trigger hidden file input
-  const handleUploadClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  // Handle file upload & parsing
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setUploadError("")
+    setIsUploading(true)
     try {
-      setUploadError("")
-      setIsUploading(true)
-      setPdfText("Parsing file...") // placeholder while parsing
-
-      const text = await extractText(file) // parse PDF/DOCX
-      setPdfText(text) 
-      // setIdea(text)// fill textarea
-      console.log("Extracted Text:", pdfText) // ✨ for testing in terminal
-
+      const text = await extractText(file)
+      setPdfText(text)
+      console.log("Extracted text from file:", text)
     } catch (err: any) {
-      console.error(err)
-      setUploadError(err.message || "Failed to parse file.")
+      console.error("File parsing failed:", err)
+      setUploadError(err.message || "Failed to parse the uploaded file.")
     } finally {
       setIsUploading(false)
     }
   }
 
-
-  const handleValidate = async () => {
-  if (!idea.trim()) return
-  setIsValidating(true)
-
-  try {
-    // 1️⃣ Generate summary
-    const summaryRes = await fetch("/api/ai-summary", {
+  // --- Summarization API ---
+  const summarizeIdea = async (text: string) => {
+    if (!text.trim()) throw new Error("Idea text is empty.")
+    const response = await fetch("/api/ai-summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: idea + pdfText }),
+      body: JSON.stringify({ text }),
     })
-    const summaryData = await summaryRes.json()
-    setSummary(summaryData)
-
-    // 2️⃣ Fetch news-based evidence
-    const evidenceRes = await fetch("/api/fetch-evidence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(summaryData),
-    })
-    const evidenceData = await evidenceRes.json()
-    setEvidence(evidenceData.evidence || [])
-
-    // 3️⃣ Grounded validation scoring using Gemini
-    const validateRes = await fetch("/api/ai-validate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ summary: summaryData, evidence: evidenceData.evidence }),
-    })
-    const validatedScores = await validateRes.json()
-
-    setValidationResult(validatedScores)
-  } catch (err) {
-    console.error("Full validation pipeline failed:", err)
-  } finally {
-    setIsValidating(false)
+    if (!response.ok) throw new Error("Failed to summarize idea.")
+    const data = await response.json()
+    return data
   }
-}
 
+  // --- Market News API ---
+  const fetchMarketNews = async (keywords: string[]) => {
+    if (!keywords || keywords.length === 0) return { articles: [] }
+    const response = await fetch("/api/fetch-evidence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keywords }),
+    })
+    if (!response.ok) throw new Error("Failed to fetch news articles.")
+    const data = await response.json()
+    return data
+  }
 
+  // --- Validation API ---
+  const validateWithGemini = async (summaryData: any, newsData: any) => {
+    const response = await fetch("/api/ai-validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: summaryData, articles: newsData }),
+    })
+    if (!response.ok) throw new Error("Validation API failed.")
+    const data = await response.json()
+    return data
+  }
+
+  // --- Main Handler ---
+  const handleValidate = async () => {
+    if (!idea.trim() && !pdfText.trim()) {
+      setUploadError("Please provide a startup idea or upload a pitch deck.")
+      return
+    }
+
+    setIsValidating(true)
+    setUploadError("")
+    setValidationResult(null)
+
+    try {
+      // Step 1: Combine inputs
+      const fullText = `${idea} ${pdfText}`.trim()
+
+      // Step 2: Summarize
+      const summaryData = await summarizeIdea(fullText)
+      setSummary(summaryData)
+      setKeywords(summaryData.keywords || [])
+      console.log("Summary:", summaryData)
+
+      // Step 3: Market Research
+      const newsData = await fetchMarketNews(summaryData.keywords || [])
+      setArticles(newsData.articles || [])
+      console.log("Market Articles:", newsData)
+
+      // Step 4: Validate with Gemini
+      const validationData = await validateWithGemini(summaryData, newsData)
+      setValidationResult(validationData)
+      console.log("Gemini Validation:", validationData)
+    } catch (err: any) {
+      console.error("Validation failed:", err)
+      setUploadError(err.message || "Something went wrong during validation.")
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  // --- UI ---
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
@@ -106,6 +128,7 @@ export default function ValidationPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* LEFT: Upload + Validation */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
@@ -115,17 +138,22 @@ export default function ValidationPage() {
               </CardTitle>
               <CardDescription>Paste your idea or upload your pitch deck for analysis</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <Textarea
-                placeholder="Describe your startup idea in detail... Include problem, solution, target market, business model."
+                placeholder="Describe your startup idea in detail... Include problem, solution, target market, and business model."
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
                 className="min-h-[200px]"
               />
 
               <div className="flex items-center gap-4">
-                {/* Validate button */}
-                <Button onClick={handleValidate} disabled={isValidating || !idea.trim()} className="flex-1">
+                {/* Validate Button */}
+                <Button
+                  onClick={handleValidate}
+                  disabled={isValidating || (!idea.trim() && !pdfText.trim())}
+                  className="flex-1"
+                >
                   {isValidating ? (
                     <>
                       <Sparkles className="mr-2 h-4 w-4 animate-spin" />
@@ -139,10 +167,10 @@ export default function ValidationPage() {
                   )}
                 </Button>
 
-                {/* Upload Deck button */}
+                {/* Upload Button */}
                 <input
                   type="file"
-                  accept=".pdf,.docx"
+                  accept=".pdf,.docx,.pptx"
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   style={{ display: "none" }}
@@ -153,11 +181,11 @@ export default function ValidationPage() {
                 </Button>
               </div>
 
-              {/* Upload error */}
               {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
             </CardContent>
           </Card>
 
+          {/* VALIDATION RESULTS */}
           {validationResult && (
             <>
               {/* Overall Score */}
@@ -184,7 +212,7 @@ export default function ValidationPage() {
                   <CardDescription>Detailed analysis by category</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {validationResult.categories.map((category: any, index: number) => (
+                  {validationResult.categories?.map((category: any, index: number) => (
                     <div key={index} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{category.name}</span>
@@ -205,7 +233,7 @@ export default function ValidationPage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3">
-                    {validationResult.recommendations.map((rec: string, index: number) => (
+                    {validationResult.recommendations?.map((rec: string, index: number) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
                         <span className="text-sm leading-relaxed">{rec}</span>
@@ -218,7 +246,7 @@ export default function ValidationPage() {
           )}
         </div>
 
-        {/* What We Analyze Card */}
+        {/* RIGHT: Info Card */}
         <div>
           <Card>
             <CardHeader>
